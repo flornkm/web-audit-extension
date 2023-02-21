@@ -1,10 +1,12 @@
 import { Action, ActionPanel, Detail, Form } from "@raycast/api";
 import { useState } from "react";
 import ogs from "open-graph-scraper";
+import fetch from "node-fetch";
 
 export default function Command() {
   const [result, setResult] = useState(null as unknown as Record<string, string>);
   const [urlError, setUrlError] = useState<string | undefined>();
+  const [website, setWebsite] = useState<string | undefined>();
 
   const metaData = async (siteUrl: string) => {
     const options = { url: siteUrl };
@@ -23,14 +25,24 @@ export default function Command() {
     return score;
   };
 
+  const urlReachable = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      return response.ok;
+    } catch (error) {
+      return false;
+    }
+  };
+
   const validateUrl = (url: string) => {
     const pattern = new RegExp(
-      "^(https?:\\/\\/)" + // protocol
-        "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
-        "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
-        "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
-        "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
-        "(\\#[-a-z\\d_]*)?$",
+      "^(https?:\\/\\/)" ||
+        "" + // protocol
+          "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
+          "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+          "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+          "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+          "(\\#[-a-z\\d_]*)?$",
       "i"
     ); // fragment locator
     return !!pattern.test(url);
@@ -40,11 +52,12 @@ export default function Command() {
     if (urlError && urlError.length > 0) {
       setUrlError(undefined);
     }
-  }
+  };
 
   const submitForm = async (values: Record<string, string>) => {
-    if (validateUrl(values.url)) {
+    if (validateUrl(values.url) && (await urlReachable(values.url))) {
       await metaData(String(values.url));
+      setWebsite(String(values.url));
     } else {
       setUrlError("Invalid URL");
     }
@@ -64,12 +77,23 @@ export default function Command() {
             </ActionPanel>
           }
         >
-          <Form.TextField id="url" title="URL" placeholder="https://www.example.com" error={urlError} onChange={() => dropUrlErrorIfNeeded()} />
+          <Form.TextField
+            id="url"
+            title="URL (with https)"
+            placeholder="https://www.example.com"
+            error={urlError}
+            onChange={() => dropUrlErrorIfNeeded()}
+          />
         </Form>
       )}
       {result && (
         <Detail
-          markdown={` # SEO Score: ${seoScore(result) * 25}%`}
+          navigationTitle={`Analyzed ${website}`}
+          markdown={
+            (result.ogImage &&
+              `# SEO Score: ${seoScore(result) * 25}% \n ![${result.ogTitle}](${result.ogImage.url})`) ||
+            `# SEO Score: ${seoScore(result) * 25}%`
+          }
           metadata={
             <Detail.Metadata>
               {result.author && <Detail.Metadata.Label title="Sitename" text={result.author} />}
@@ -93,9 +117,17 @@ export default function Command() {
             </Detail.Metadata>
           }
           actions={
-            result.ogUrl && (
+            website && (
               <ActionPanel>
-                <Action.OpenInBrowser url={result.ogUrl} title="Open Site" />
+                <Action.OpenInBrowser url={website} title="Open Site" />
+                <Action
+                  title="Analyze another site"
+                  onAction={() => {
+                    setResult(null as unknown as Record<string, string>);
+                  }}
+                  shortcut={{ modifiers: ["cmd"], key: "a" }}
+                  icon={{ source: "command-icon.png" }}
+                />
               </ActionPanel>
             )
           }

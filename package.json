@@ -21,6 +21,7 @@
   ],
   "dependencies": {
     "@raycast/api": "^1.47.3",
+    "node-fetch": "^3.3.0",
     "open-graph-scraper": "^5.1.0"
   },
   "devDependencies": {
