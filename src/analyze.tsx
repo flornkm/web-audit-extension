@@ -19,7 +19,7 @@ export default function Command() {
   };
 
   const seoScore = (result: Record<string, string>) => {
-    const { ogTitle, ogDescription, ogImage, ogUrl } = result;
+    const { ogTitle, ogDescription, ogImage } = result;
     let score = 0 as number;
 
     if (ogTitle) score += 1;
@@ -29,10 +29,7 @@ export default function Command() {
     if (ogImage) score += 1;
     else notFound.push("Set an Open Graph Image");
 
-    // Calculate the percentage of the score when 100 is the max
-    score = Math.round((score / 3) * 100);
-
-    console.log(notFound);
+    score = (score + " / 3") as unknown as number;
     setMissing(notFound);
     setScore(score);
   };
@@ -44,6 +41,12 @@ export default function Command() {
     } catch (error) {
       return false;
     }
+  };
+
+  const fetchPageAltTags = async (url: string) => {
+    const response = await fetch(url);
+    const html = await response.text();
+    
   };
 
   const validateUrl = (url: string) => {
@@ -109,8 +112,8 @@ export default function Command() {
           markdown={
             ((result.ogImage &&
               !Array.isArray(result.ogImage) &&
-              `# SEO Score: ${score * 25}% \n ![${result.ogTitle}](${result.ogImage.url})`) ||
-              `# SEO Score: ${score * 25}%`) +
+              `# SEO Score: ${score} \n ![${result.ogTitle}](${result.ogImage.url})`) ||
+              `# SEO Score: ${score}`) +
             ((missing.length !== 0 && `\n \n You can adjust the following:`) || "") +
             missing.map((item) => `\n - ${item}`).join("")
           }
