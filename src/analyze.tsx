@@ -8,19 +8,23 @@ export default function Command() {
   const [urlError, setUrlError] = useState<string | undefined>();
   const [website, setWebsite] = useState<string | undefined>();
   const [score, setScore] = useState<number>(0);
+  const [imgTags, setImgTags] = useState<string>();
+  const [hTags, setHTags] = useState<string>();
   const [missing, setMissing] = useState<string[]>([]);
-  const notFound = [] as string[];
+  const [pageSpeed, setPageSpeed] = useState<string>();
 
   const metaData = async (siteUrl: string) => {
     const options = { url: siteUrl };
     const { result } = await ogs(options);
-    seoScore(result as Record<string, string>);
+    const score = await seoScore(result as Record<string, string>);
+    await fetchPageTags(siteUrl as string, score);
     setResult(result as Record<string, string>);
   };
 
-  const seoScore = (result: Record<string, string>) => {
+  const seoScore = async (result: Record<string, string>) => {
     const { ogTitle, ogDescription, ogImage } = result;
     let score = 0 as number;
+    const notFound = [];
 
     if (ogTitle) score += 1;
     else notFound.push("Set an Open Graph Title");
@@ -29,9 +33,10 @@ export default function Command() {
     if (ogImage) score += 1;
     else notFound.push("Set an Open Graph Image");
 
-    score = (score + " / 3") as unknown as number;
     setMissing(notFound);
     setScore(score);
+
+    return score;
   };
 
   const urlReachable = async (url: string) => {
@@ -43,10 +48,55 @@ export default function Command() {
     }
   };
 
-  const fetchPageAltTags = async (url: string) => {
+  const timeUntilResponse = async (url: string, score: number) => {
+    const start = Date.now();
+    await fetch(url);
+    const end = Date.now();
+    if (end - start > 1000) {
+      return end - start + " ms";
+    } else {
+      setScore(score + 1);
+      return end - start + " ms";
+    }
+  };
+
+  const fetchPageTags = async (url: string, score: number) => {
     const response = await fetch(url);
     const html = await response.text();
-    
+    const altRegex = /<img[^>]+alt="([^">]+)"[^>]*>/g;
+    const altMatches = html.matchAll(altRegex);
+    const altTags = Array.from(altMatches, (m) => m[1]);
+    const imgRegex = /<img[^>]+>/g;
+    const imgMatches = html.matchAll(imgRegex);
+    const imgTags = Array.from(imgMatches, (m) => m[0]);
+
+    if (altTags.length < imgTags.length) {
+      setImgTags(` ${String(imgTags.length - altTags.length)} images are missing alt tags`);
+      setScore(score);
+    } else {
+      setImgTags(`All images have alt tags, well done! 👏`);
+      setScore(score + 1);
+    }
+
+    const h1Regex = /<h1[^>]+>([^">]+)<\/h1>/g;
+    const h1Matches = html.matchAll(h1Regex);
+    const h1Tags = Array.from(h1Matches, (m) => m[1]) as string[];
+    const h2Regex = /<h2[^>]+>([^">]+)<\/h2>/g;
+    const h2Matches = html.matchAll(h2Regex);
+    const h2Tags = Array.from(h2Matches, (m) => m[1]) as string[];
+    const h3Regex = /<h3[^>]+>([^">]+)<\/h3>/g;
+    const h3Matches = html.matchAll(h3Regex);
+    const h3Tags = Array.from(h3Matches, (m) => m[1]) as string[];
+
+    if (h1Tags.length < h2Tags.length && h2Tags.length < h3Tags.length) {
+      setHTags(`All headings are in order, well done! 👏`);
+      setScore(score + 1);
+    } else {
+      setHTags(`Headings are not in order`);
+    }
+
+    const pageSpeed = await timeUntilResponse(url, score);
+    setPageSpeed(pageSpeed);
   };
 
   const validateUrl = (url: string) => {
@@ -59,7 +109,7 @@ export default function Command() {
           "(\\?[;&a-z\\d%_.~+=-]*)?" +
           "(\\#[-a-z\\d_]*)?$",
       "i"
-    ); // fragment locator
+    );
     return !!pattern.test(url);
   };
 
@@ -112,10 +162,13 @@ export default function Command() {
           markdown={
             ((result.ogImage &&
               !Array.isArray(result.ogImage) &&
-              `# SEO Score: ${score} \n ![${result.ogTitle}](${result.ogImage.url})`) ||
-              `# SEO Score: ${score}`) +
-            ((missing.length !== 0 && `\n \n You can adjust the following:`) || "") +
-            missing.map((item) => `\n - ${item}`).join("")
+              `# SEO Score: ${score} / 6 \n ![${result.ogTitle}](${result.ogImage.url})`) ||
+              `# SEO Score: ${score} / 6`) +
+            ((missing.length !== 0 && `\n \n The analysis returned the following:`) || "") +
+            missing.map((item) => `\n - ${item}`).join("") +
+            ((imgTags && `\n - ${imgTags}`) || "") +
+            ((hTags && `\n - ${hTags}`) || "") +
+            ((pageSpeed && `\n - Page loaded in: ${pageSpeed}`) || "")
           }
           metadata={
             <Detail.Metadata>
