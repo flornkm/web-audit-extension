@@ -12,6 +12,8 @@ export default function Command() {
   const [hTags, setHTags] = useState<string>();
   const [missing, setMissing] = useState<string[]>([]);
   const [pageSpeed, setPageSpeed] = useState<string>();
+  const [metaViewPortTag, setMetaViewPortTag] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const metaData = async (siteUrl: string) => {
     const options = { url: siteUrl };
@@ -95,6 +97,16 @@ export default function Command() {
       setHTags(`Headings are not in order`);
     }
 
+    const metaViewportRegex = /<meta[^>]+name="viewport"[^>]+>/g;
+    const metaViewportMatches = html.matchAll(metaViewportRegex);
+    const metaViewportTags = Array.from(metaViewportMatches, (m) => m[0]) as string[];
+    if (metaViewportTags.length > 0) {
+      setMetaViewPortTag(true);
+      setScore(score + 1);
+    } else {
+      setMetaViewPortTag(false);
+    }
+
     const pageSpeed = await timeUntilResponse(url, score);
     setPageSpeed(pageSpeed);
   };
@@ -120,27 +132,33 @@ export default function Command() {
   };
 
   const submitForm = async (values: Record<string, string>) => {
+    setLoading(true);
     if (values.url) {
       if (validateUrl(values.url) && (await urlReachable(values.url))) {
         await metaData(String(values.url));
         setWebsite(String(values.url));
+        setLoading(false);
       } else {
         setUrlError("Invalid URL");
+        setLoading(false);
       }
     } else {
       setUrlError("URL is required");
+      setLoading(false);
     }
   };
 
   return (
     <>
-      {!result && (
+      {!result && !loading && (
         <Form
+          navigationTitle={loading ? "Analyzing..." : "SEO Analyzer"}
           actions={
             <ActionPanel>
               <Action.SubmitForm
                 onSubmit={(values) => {
-                  submitForm(values);
+                  if (!loading) submitForm(values);
+                  else return;
                 }}
                 title="Analyze"
               />
@@ -156,19 +174,20 @@ export default function Command() {
           />
         </Form>
       )}
-      {result && (
+      {result && !loading && (
         <Detail
           navigationTitle={`Analyzed ${website}`}
           markdown={
             ((result.ogImage &&
               !Array.isArray(result.ogImage) &&
-              `# SEO Score: ${score} / 6 \n ![${result.ogTitle}](${result.ogImage.url})`) ||
-              `# SEO Score: ${score} / 6`) +
-            ((missing.length !== 0 && `\n \n The analysis returned the following:`) || "") +
+              `# SEO Score: ${score} / 7 \n ![${result.ogTitle}](${result.ogImage.url})`) ||
+              `# SEO Score: ${score} / 7`) +
+            ((`\n \n ## The analysis returned the following:`) || "") +
             missing.map((item) => `\n - ${item}`).join("") +
             ((imgTags && `\n - ${imgTags}`) || "") +
             ((hTags && `\n - ${hTags}`) || "") +
-            ((pageSpeed && `\n - Page loaded in: ${pageSpeed}`) || "")
+            ((pageSpeed && `\n - Page loaded in: ${pageSpeed}`) || "") +
+            ((metaViewPortTag && `\n - Meta viewport tag found`) || "\n - No meta viewport tag found")
           }
           metadata={
             <Detail.Metadata>
