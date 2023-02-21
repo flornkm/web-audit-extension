@@ -1,8 +1,8 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "seo",
-  "title": "SEO",
-  "description": "Analyze critical SEO related data of any webpage. ",
+  "name": "seo-checker",
+  "title": "SEO Checker",
+  "description": "Analyze critical SEO related data of any website.",
   "icon": "command-icon.png",
   "author": "flooo",
   "categories": [
@@ -14,13 +14,14 @@
   "commands": [
     {
       "name": "analyze",
-      "title": "analyze",
+      "title": "Analyze Website",
       "description": "Analyze SEO related data of a website",
       "mode": "view"
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.47.3"
+    "@raycast/api": "^1.47.3",
+    "open-graph-scraper": "^5.1.0"
   },
   "devDependencies": {
     "@types/node": "18.8.3",
