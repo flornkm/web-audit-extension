@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Detail, Form } from "@raycast/api";
+import { Action, ActionPanel, Detail, Form, Icon } from "@raycast/api";
 import { useState } from "react";
 import ogs from "open-graph-scraper";
 import fetch from "node-fetch";
@@ -7,21 +7,34 @@ export default function Command() {
   const [result, setResult] = useState(null as unknown as Record<string, string>);
   const [urlError, setUrlError] = useState<string | undefined>();
   const [website, setWebsite] = useState<string | undefined>();
+  const [score, setScore] = useState<number>(0);
+  const [missing, setMissing] = useState<string[]>([]);
+  const notFound = [] as string[];
 
   const metaData = async (siteUrl: string) => {
     const options = { url: siteUrl };
     const { result } = await ogs(options);
+    seoScore(result as Record<string, string>);
     setResult(result as Record<string, string>);
   };
 
   const seoScore = (result: Record<string, string>) => {
     const { ogTitle, ogDescription, ogImage, ogUrl } = result;
     let score = 0 as number;
+
     if (ogTitle) score += 1;
+    else notFound.push("Set an Open Graph Title");
     if (ogDescription) score += 1;
+    else notFound.push("Set an Open Graph Description");
     if (ogImage) score += 1;
-    if (ogUrl) score += 1;
-    return score;
+    else notFound.push("Set an Open Graph Image");
+
+    // Calculate the percentage of the score when 100 is the max
+    score = Math.round((score / 3) * 100);
+
+    console.log(notFound);
+    setMissing(notFound);
+    setScore(score);
   };
 
   const urlReachable = async (url: string) => {
@@ -36,11 +49,11 @@ export default function Command() {
   const validateUrl = (url: string) => {
     const pattern = new RegExp(
       "^(https?:\\/\\/)" ||
-        "" + // protocol
-          "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
-          "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
-          "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
-          "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+        "" +
+          "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
+          "((\\d{1,3}\\.){3}\\d{1,3}))" +
+          "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" +
+          "(\\?[;&a-z\\d%_.~+=-]*)?" +
           "(\\#[-a-z\\d_]*)?$",
       "i"
     ); // fragment locator
@@ -54,11 +67,15 @@ export default function Command() {
   };
 
   const submitForm = async (values: Record<string, string>) => {
-    if (validateUrl(values.url) && (await urlReachable(values.url))) {
-      await metaData(String(values.url));
-      setWebsite(String(values.url));
+    if (values.url) {
+      if (validateUrl(values.url) && (await urlReachable(values.url))) {
+        await metaData(String(values.url));
+        setWebsite(String(values.url));
+      } else {
+        setUrlError("Invalid URL");
+      }
     } else {
-      setUrlError("Invalid URL");
+      setUrlError("URL is required");
     }
   };
 
@@ -72,6 +89,7 @@ export default function Command() {
                 onSubmit={(values) => {
                   submitForm(values);
                 }}
+                title="Analyze"
               />
             </ActionPanel>
           }
@@ -89,10 +107,12 @@ export default function Command() {
         <Detail
           navigationTitle={`Analyzed ${website}`}
           markdown={
-            (result.ogImage &&
+            ((result.ogImage &&
               !Array.isArray(result.ogImage) &&
-              `# SEO Score: ${seoScore(result) * 25}% \n ![${result.ogTitle}](${result.ogImage.url})`) ||
-            `# SEO Score: ${seoScore(result) * 25}%`
+              `# SEO Score: ${score * 25}% \n ![${result.ogTitle}](${result.ogImage.url})`) ||
+              `# SEO Score: ${score * 25}%`) +
+            ((missing.length !== 0 && `\n \n You can adjust the following:`) || "") +
+            missing.map((item) => `\n - ${item}`).join("")
           }
           metadata={
             <Detail.Metadata>
@@ -126,7 +146,7 @@ export default function Command() {
                     setResult(null as unknown as Record<string, string>);
                   }}
                   shortcut={{ modifiers: ["cmd"], key: "a" }}
-                  icon={{ source: "command-icon.png" }}
+                  icon={Icon.ArrowLeft}
                 />
               </ActionPanel>
             )
