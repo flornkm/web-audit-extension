@@ -91,6 +91,7 @@ export default function Command() {
           navigationTitle={`Analyzed ${website}`}
           markdown={
             (result.ogImage &&
+              !Array.isArray(result.ogImage) &&
               `# SEO Score: ${seoScore(result) * 25}% \n ![${result.ogTitle}](${result.ogImage.url})`) ||
             `# SEO Score: ${seoScore(result) * 25}%`
           }
