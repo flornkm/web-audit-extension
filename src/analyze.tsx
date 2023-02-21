@@ -12,7 +12,6 @@ export default function Command() {
     const options = { url: siteUrl };
     const { result } = await ogs(options);
     setResult(result as Record<string, string>);
-    console.log(result);
   };
 
   const seoScore = (result: Record<string, string>) => {
