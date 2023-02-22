@@ -1,8 +1,13 @@
-import { Action, ActionPanel, Detail, Form, Icon } from "@raycast/api";
-import { useState } from "react";
+import { Action, ActionPanel, Detail, Form, Icon, LaunchProps } from "@raycast/api";
+import { useEffect, useState } from "react";
 import fetch from "node-fetch";
 
-export default function Command() {
+interface Website {
+  url: string;
+}
+
+export default function Command(props: LaunchProps<{ arguments: Website }>) {
+  const { url } = props.arguments;
   const [result, setResult] = useState(null as unknown as Record<string, string>);
   const [sidebar, setSidebar] = useState(null as unknown as Record<string, string>);
   const [favicon, setFavicon] = useState<string | undefined>();
@@ -97,14 +102,14 @@ export default function Command() {
 
   const validateUrl = (url: string) => {
     const pattern = new RegExp(
-      "^(https?:\\/\\/)?" + // protocol
-        "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
-        "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
-        "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
-        "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+      "^(https?:\\/\\/)?" +
+        "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
+        "((\\d{1,3}\\.){3}\\d{1,3}))" +
+        "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" +
+        "(\\?[;&a-z\\d%_.~+=-]*)?" +
         "(\\#[-a-z\\d_]*)?$",
       "i"
-    ); // fragment locator
+    );
     return !!pattern.test(url);
   };
 
@@ -134,11 +139,15 @@ export default function Command() {
     }
   };
 
+  useEffect(() => {
+    if (url) submitForm({ url: url });
+  }, []);
+
   return (
     <>
       {!result && !loading && (
         <Form
-          navigationTitle={loading ? "Analyzing..." : "SEO Analyzer"}
+          navigationTitle={loading ? "Analyzing..." : "Web Audit"}
           actions={
             <ActionPanel>
               <Action.SubmitForm
@@ -154,9 +163,10 @@ export default function Command() {
           <Form.TextField
             id="url"
             title="URL (with https)"
-            placeholder="https://www.example.com"
+            placeholder="https://www.raycast.com"
             error={urlError}
             onChange={() => dropUrlErrorIfNeeded()}
+            defaultValue={url}
           />
         </Form>
       )}

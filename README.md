@@ -11,7 +11,7 @@ If the Extension gets approved you will find it in the Raycast Store.
 You can install the extension via the `import extension` command directly in Raycast.
 
 ### 2. Use the command
-The command for starting the Extension is `Analyze Website SEO`.
+The command for starting the Extension is `Analyze Website [https://raycast.com/]`.
 
 ### 3. Type in the Website URL
 You now can type in the website url of your choice into the input field. Please note that you have to give the full adress inclusive `https://`.

@@ -7,16 +7,25 @@
   "author": "floriandwt",
   "categories": [
     "Developer Tools",
-    "Data", 
+    "Data",
     "Web"
   ],
   "license": "MIT",
   "commands": [
-    { 
+    {
       "name": "analyze",
-      "title": "Analyze Website SEO",
+      "title": "Analyze Website",
       "description": "Find SEO related data of any given webpage.",
-      "mode": "view"
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "url",
+          "placeholder": "https://raycast.com",
+          "type": "text",
+          "identifier": "url",
+          "required": true
+        }
+      ]
     }
   ],
   "dependencies": {

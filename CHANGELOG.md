@@ -1,3 +1,3 @@
-# SEO Changelog
+# Web Audit Changelog
 
-## [Initial Version] - 2023-02-21
+## [Initial Release] - 2023-02-21
