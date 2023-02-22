@@ -10,6 +10,11 @@
     "Data",
     "Web"
   ],
+  "screenshots": [
+    "webaudit_extension_typing.jpg",
+    "webaudit_extension_url.jpg",
+    "webaudit_extension_result.jpg"
+  ],
   "license": "MIT",
   "commands": [
     {
