@@ -3,7 +3,7 @@
   "name": "web-audit",
   "title": "Web Audit",
   "description": "Find SEO related data of any given webpage.",
-  "icon": "seo_checker_icon.png",
+  "icon": "web-audit-icon.png",
   "author": "floriandwt",
   "categories": [
     "Developer Tools",
@@ -11,9 +11,10 @@
     "Web"
   ],
   "screenshots": [
-    "webaudit_extension_typing.jpg",
-    "webaudit_extension_url.jpg",
-    "webaudit_extension_result.jpg"
+    "analyze-website.png",
+    "analyze-results.png",
+    "info-website.png",
+    "info-results.png"
   ],
   "license": "MIT",
   "commands": [
@@ -28,7 +29,22 @@
           "placeholder": "https://raycast.com",
           "type": "text",
           "identifier": "url",
-          "required": true
+          "required": false
+        }
+      ]
+    },
+    {
+      "name": "info",
+      "title": "Get Website Info",
+      "description": "Find general information about a given webpage.",
+      "mode": "view",
+      "arguments": [
+        {
+          "name": "url",
+          "placeholder": "https://raycast.com",
+          "type": "text",
+          "identifier": "url",
+          "required": false
         }
       ]
     }
