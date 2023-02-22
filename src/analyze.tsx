@@ -1,142 +1,127 @@
 import { Action, ActionPanel, Detail, Form, Icon } from "@raycast/api";
 import { useState } from "react";
-import ogs from "open-graph-scraper";
 import fetch from "node-fetch";
 
 export default function Command() {
   const [result, setResult] = useState(null as unknown as Record<string, string>);
+  const [sidebar, setSidebar] = useState(null as unknown as Record<string, string>);
+  const [favicon, setFavicon] = useState<string | undefined>();
   const [urlError, setUrlError] = useState<string | undefined>();
   const [website, setWebsite] = useState<string | undefined>();
   const [score, setScore] = useState<number>(0);
-  const [imgTags, setImgTags] = useState<string>();
-  const [hTags, setHTags] = useState<string>();
-  const [missing, setMissing] = useState<string[]>([]);
-  const [pageSpeed, setPageSpeed] = useState<string>();
-  const [metaViewPortTag, setMetaViewPortTag] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const metaData = async (siteUrl: string) => {
-    const options = { url: siteUrl };
-    const { result } = await ogs(options);
-    const score = await seoScore(result as Record<string, string>);
-    await fetchPageTags(siteUrl as string, score);
-    setResult(result as Record<string, string>);
+  const checkHTags = (data: string) => {
+    const h1 = data.match(/<h1/g)?.length || 0;
+    const h2 = data.match(/<h2/g)?.length || 0;
+    const h3 = data.match(/<h3/g)?.length || 0;
+    const h4 = data.match(/<h4/g)?.length || 0;
+    const h5 = data.match(/<h5/g)?.length || 0;
+    const h6 = data.match(/<h6/g)?.length || 0;
+
+    if (h1 < h2 && h2 < h3 && h3 < h4 && h4 < h5 && h5 < h6) {
+      setScore((score) => score + 1);
+      setResult((result) => ({ ...result, hTags: "Headings are in order" }));
+    } else {
+      setResult((result) => ({ ...result, hTags: "Headings are not in order" }));
+    }
   };
 
-  const seoScore = async (result: Record<string, string>) => {
-    const { ogTitle, ogDescription, ogImage } = result;
-    let score = 0 as number;
-    const notFound = [];
+  const checkImageAlt = (data: string) => {
+    const images = data.match(/<img/g)?.length || 0;
+    const altImages = data.match(/alt=/g)?.length || 0;
 
-    if (ogTitle) score += 1;
-    else notFound.push("Set an Open Graph Title");
-    if (ogDescription) score += 1;
-    else notFound.push("Set an Open Graph Description");
-    if (ogImage) score += 1;
-    else notFound.push("Set an Open Graph Image");
+    if (images === altImages) {
+      setScore((score) => score + 1);
+      setResult((result) => ({ ...result, imageAlt: "All images have alt tags" }));
+    } else {
+      setResult((result) => ({ ...result, imageAlt: "Not all images have alt tags" }));
+    }
+  };
 
-    setMissing(notFound);
-    setScore(score);
+  const checkMeta = (data: string) => {
+    const meta = data.match(/<meta/g)?.length || 0;
 
-    return score;
+    if (meta > 5) {
+      setScore((score) => score + 1);
+      setResult((result) => ({ ...result, meta: "Meta tags are correct" }));
+    } else {
+      setResult((result) => ({ ...result, meta: "Some meta tags are not correct" }));
+    }
+  };
+
+  const getFavicon = (url: string) => {
+    const icon = `https://www.google.com/s2/favicons?domain=${url}`;
+    setFavicon(icon);
+  };
+
+  const getWebsiteInfo = (data: string) => {
+    const title = data.match(/<title>(.*?)<\/title>/)?.[1];
+    const description = data.match(/<meta name="description" content="(.*?)"\/>/)?.[1];
+    const charset = data.match(/<meta\s+charset=["']?([a-zA-Z0-9-]+)["']?\s*\/?>/i)?.[1];
+    const languageAttr = data.match(/<html lang="(.*?)">/)?.[1];
+    const languageCode = languageAttr?.substring(0, 2);
+    const author = data.match(/<meta name="author" content="(.*?)"\/>/)?.[1] || data.match(/<meta\s+property=["']twitter:site["']\s+content=["']@([a-zA-Z0-9_]+)["']\s*\/?>/i)?.[1];
+
+    if (title) setSidebar((sidebar) => ({ ...sidebar, title: title }));
+    if (description) setSidebar((sidebar) => ({ ...sidebar, description: description }));
+    if (charset) setSidebar((sidebar) => ({ ...sidebar, charset: charset }));
+    if (languageCode) setSidebar((sidebar) => ({ ...sidebar, language: languageCode }));
+    if (author) setSidebar((sidebar) => ({ ...sidebar, author: author }));
+  };
+
+  const websiteCheck = async (url: string) => {
+    const start = Date.now();
+    const response = await fetch(url);
+    const data = await response.text();
+    const end = Date.now();
+
+    getFavicon(url);
+    checkHTags(data);
+    checkImageAlt(data);
+    checkMeta(data);
+    if (end - start > 1000) {
+      setResult((result) => ({ ...result, pageSpeed: `The website is slow (${end - start}ms)` }));
+    } else {
+      setScore((score) => score + 1);
+      setResult((result) => ({ ...result, pageSpeed: `The website is fast (${end - start}ms)` }));
+    }
+    getWebsiteInfo(data);
+  };
+
+  const dropUrlErrorIfNeeded = () => {
+    if (urlError) setUrlError(undefined);
+  };
+
+  const validateUrl = (url: string) => {
+    const pattern = new RegExp(
+      "^(https?:\\/\\/)?" + // protocol
+        "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" + // domain name
+        "((\\d{1,3}\\.){3}\\d{1,3}))" + // OR ip (v4) address
+        "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" + // port and path
+        "(\\?[;&a-z\\d%_.~+=-]*)?" + // query string
+        "(\\#[-a-z\\d_]*)?$",
+      "i"
+    ); // fragment locator
+    return !!pattern.test(url);
   };
 
   const urlReachable = async (url: string) => {
     try {
       const response = await fetch(url);
-      return response.ok;
+      return response.status === 200;
     } catch (error) {
       return false;
     }
   };
-
-  const timeUntilResponse = async (url: string, score: number) => {
-    const start = Date.now();
-    await fetch(url);
-    const end = Date.now();
-    if (end - start > 1000) {
-      return end - start + " ms";
-    } else {
-      setScore(score + 1);
-      return end - start + " ms";
-    }
-  };
-
-  const fetchPageTags = async (url: string, score: number) => {
-    const response = await fetch(url);
-    const html = await response.text();
-    const altRegex = /<img[^>]+alt="([^">]+)"[^>]*>/g;
-    const altMatches = html.matchAll(altRegex);
-    const altTags = Array.from(altMatches, (m) => m[1]);
-    const imgRegex = /<img[^>]+>/g;
-    const imgMatches = html.matchAll(imgRegex);
-    const imgTags = Array.from(imgMatches, (m) => m[0]);
-
-    if (altTags.length < imgTags.length) {
-      setImgTags(` ${String(imgTags.length - altTags.length)} images are missing alt tags`);
-      setScore(score);
-    } else {
-      setImgTags(`All images have alt tags, well done! 👏`);
-      setScore(score + 1);
-    }
-
-    const h1Regex = /<h1[^>]+>([^">]+)<\/h1>/g;
-    const h1Matches = html.matchAll(h1Regex);
-    const h1Tags = Array.from(h1Matches, (m) => m[1]) as string[];
-    const h2Regex = /<h2[^>]+>([^">]+)<\/h2>/g;
-    const h2Matches = html.matchAll(h2Regex);
-    const h2Tags = Array.from(h2Matches, (m) => m[1]) as string[];
-    const h3Regex = /<h3[^>]+>([^">]+)<\/h3>/g;
-    const h3Matches = html.matchAll(h3Regex);
-    const h3Tags = Array.from(h3Matches, (m) => m[1]) as string[];
-
-    if (h1Tags.length < h2Tags.length && h2Tags.length < h3Tags.length) {
-      setHTags(`All headings are in order, well done! 👏`);
-      setScore(score + 1);
-    } else {
-      setHTags(`Headings are not in order`);
-    }
-
-    const metaViewportRegex = /<meta[^>]+name="viewport"[^>]+>/g;
-    const metaViewportMatches = html.matchAll(metaViewportRegex);
-    const metaViewportTags = Array.from(metaViewportMatches, (m) => m[0]) as string[];
-    if (metaViewportTags.length > 0) {
-      setMetaViewPortTag(true);
-      setScore(score + 1);
-    } else {
-      setMetaViewPortTag(false);
-    }
-
-    const pageSpeed = await timeUntilResponse(url, score);
-    setPageSpeed(pageSpeed);
-  };
-
-  const validateUrl = (url: string) => {
-    const pattern = new RegExp(
-      "^(https?:\\/\\/)" ||
-        "" +
-          "((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|" +
-          "((\\d{1,3}\\.){3}\\d{1,3}))" +
-          "(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*" +
-          "(\\?[;&a-z\\d%_.~+=-]*)?" +
-          "(\\#[-a-z\\d_]*)?$",
-      "i"
-    );
-    return !!pattern.test(url);
-  };
-
-  const dropUrlErrorIfNeeded = () => {
-    if (urlError && urlError.length > 0) {
-      setUrlError(undefined);
-    }
-  };
+  
 
   const submitForm = async (values: Record<string, string>) => {
     setLoading(true);
     if (values.url) {
       if (validateUrl(values.url) && (await urlReachable(values.url))) {
-        await metaData(String(values.url));
-        setWebsite(String(values.url));
+        await websiteCheck(String(values.url));
+        setWebsite(values.url);
         setLoading(false);
       } else {
         setUrlError("Invalid URL");
@@ -178,36 +163,33 @@ export default function Command() {
         <Detail
           navigationTitle={`Analyzed ${website}`}
           markdown={
-            ((result.ogImage &&
-              !Array.isArray(result.ogImage) &&
-              `# SEO Score: ${score} / 7 \n ![${result.ogTitle}](${result.ogImage.url})`) ||
-              `# SEO Score: ${score} / 7`) +
-            ((`\n \n ## The analysis returned the following:`) || "") +
-            missing.map((item) => `\n - ${item}`).join("") +
-            ((imgTags && `\n - ${imgTags}`) || "") +
-            ((hTags && `\n - ${hTags}`) || "") +
-            ((pageSpeed && `\n - Page loaded in: ${pageSpeed}`) || "") +
-            ((metaViewPortTag && `\n - Meta viewport tag found`) || "\n - No meta viewport tag found")
+            ((favicon && `# ![${website}](${favicon}) `) || "#") +
+            ` SEO Score: ${score * 25}% \n` +
+            `## Results in detail: \n` +
+            ` - ${result.hTags} \n` +
+            ` - ${result.imageAlt} \n` +
+            ` - ${result.meta} \n` +
+            ` - ${result.pageSpeed} \n`
           }
           metadata={
             <Detail.Metadata>
-              {result.author && <Detail.Metadata.Label title="Sitename" text={result.author} />}
-              {result.ogTitle && <Detail.Metadata.Label title="Homepage Title" text={result.ogTitle} />}
-              {result.ogDescription && <Detail.Metadata.Label title="Site Description" text={result.ogDescription} />}
-              {result.twitterSite && <Detail.Metadata.Label title="Twitter" text={result.twitterSite} />}
-              {result.charset && (
-                <Detail.Metadata.TagList title="Charset">
-                  <Detail.Metadata.TagList.Item text={result.charset} color="#ff0000"></Detail.Metadata.TagList.Item>
+              {sidebar.title && <Detail.Metadata.Label title="Page Title" text={sidebar.title} />}
+              {sidebar.description && <Detail.Metadata.Label title="Description" text={sidebar.description} />}
+              {(sidebar.charset || sidebar.language) && (
+                <Detail.Metadata.TagList title="Page Info">
+                  {sidebar.charset && (
+                    <Detail.Metadata.TagList.Item text={sidebar.charset} color="#22c55e"></Detail.Metadata.TagList.Item>
+                  )}
+                  {sidebar.language && (
+                    <Detail.Metadata.TagList.Item
+                      text={sidebar.language}
+                      color="#22c55e"
+                    ></Detail.Metadata.TagList.Item>
+                  )}
                 </Detail.Metadata.TagList>
               )}
-              {result.ogLocale && (
-                <Detail.Metadata.TagList title="Locale">
-                  <Detail.Metadata.TagList.Item text={result.ogLocale} color="#0000ff"></Detail.Metadata.TagList.Item>
-                </Detail.Metadata.TagList>
-              )}
-              <Detail.Metadata.Separator />
-              {result.author && result.ogUrl && (
-                <Detail.Metadata.Link title="Source" target={result.ogUrl} text={result.author} />
+              {sidebar.author && <Detail.Metadata.Separator /> && (
+                <Detail.Metadata.Link title="Source" target={String(website)} text={sidebar.author} />
               )}
             </Detail.Metadata>
           }
@@ -219,6 +201,9 @@ export default function Command() {
                   title="Analyze another site"
                   onAction={() => {
                     setResult(null as unknown as Record<string, string>);
+                    setScore(0);
+                    setWebsite("");
+                    setSidebar(null as unknown as Record<string, string>);
                   }}
                   shortcut={{ modifiers: ["cmd"], key: "a" }}
                   icon={Icon.ArrowLeft}

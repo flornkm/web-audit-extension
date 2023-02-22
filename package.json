@@ -2,9 +2,9 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "seo-checker",
   "title": "SEO Checker",
-  "description": "Analyze critical SEO related data of any website.",
+  "description": "Find SEO related data of any given webpage.",
   "icon": "command-icon.png",
-  "author": "flooo",
+  "author": "floriandwt",
   "categories": [
     "Developer Tools",
     "Data",
@@ -15,7 +15,7 @@
     {
       "name": "analyze",
       "title": "Analyze Website",
-      "description": "Quickly find SEO related data of any website",
+      "description": "Quickly analyze a website for SEO related data.",
       "mode": "view"
     }
   ],
