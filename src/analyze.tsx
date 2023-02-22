@@ -61,7 +61,9 @@ export default function Command() {
     const charset = data.match(/<meta\s+charset=["']?([a-zA-Z0-9-]+)["']?\s*\/?>/i)?.[1];
     const languageAttr = data.match(/<html lang="(.*?)">/)?.[1];
     const languageCode = languageAttr?.substring(0, 2);
-    const author = data.match(/<meta name="author" content="(.*?)"\/>/)?.[1] || data.match(/<meta\s+property=["']twitter:site["']\s+content=["']@([a-zA-Z0-9_]+)["']\s*\/?>/i)?.[1];
+    const author =
+      data.match(/<meta name="author" content="(.*?)"\/>/)?.[1] ||
+      data.match(/<meta\s+property=["']twitter:site["']\s+content=["']@([a-zA-Z0-9_]+)["']\s*\/?>/i)?.[1];
 
     if (title) setSidebar((sidebar) => ({ ...sidebar, title: title }));
     if (description) setSidebar((sidebar) => ({ ...sidebar, description: description }));
@@ -114,7 +116,6 @@ export default function Command() {
       return false;
     }
   };
-  
 
   const submitForm = async (values: Record<string, string>) => {
     setLoading(true);
@@ -188,9 +189,8 @@ export default function Command() {
                   )}
                 </Detail.Metadata.TagList>
               )}
-              {sidebar.author && <Detail.Metadata.Separator /> && (
-                <Detail.Metadata.Link title="Source" target={String(website)} text={sidebar.author} />
-              )}
+              {sidebar.author && <Detail.Metadata.Separator />}
+              {sidebar.author && <Detail.Metadata.Link title="Source" target={String(website)} text={sidebar.author} />}
             </Detail.Metadata>
           }
           actions={

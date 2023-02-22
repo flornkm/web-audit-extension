@@ -1,28 +1,27 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "seo-checker",
-  "title": "SEO Checker",
+  "name": "web-audit",
+  "title": "Web Audit",
   "description": "Find SEO related data of any given webpage.",
-  "icon": "command-icon.png",
+  "icon": "seo_checker_icon.png",
   "author": "floriandwt",
   "categories": [
     "Developer Tools",
-    "Data",
+    "Data", 
     "Web"
   ],
   "license": "MIT",
   "commands": [
-    {
+    { 
       "name": "analyze",
-      "title": "Analyze Website",
-      "description": "Quickly analyze a website for SEO related data.",
+      "title": "Analyze Website SEO",
+      "description": "Find SEO related data of any given webpage.",
       "mode": "view"
     }
   ],
   "dependencies": {
     "@raycast/api": "^1.47.3",
-    "node-fetch": "^3.3.0",
-    "open-graph-scraper": "^5.1.0"
+    "node-fetch": "^3.3.0"
   },
   "devDependencies": {
     "@types/node": "18.8.3",
