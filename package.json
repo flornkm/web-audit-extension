@@ -29,8 +29,8 @@
           "placeholder": "https://raycast.com",
           "type": "text",
           "identifier": "url",
-          "required": false
-        }
+          "required": true
+        } 
       ]
     },
     {
@@ -44,7 +44,7 @@
           "placeholder": "https://raycast.com",
           "type": "text",
           "identifier": "url",
-          "required": false
+          "required": true
         }
       ]
     }
