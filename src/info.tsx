@@ -135,7 +135,7 @@ export default function Command(props: LaunchProps<{ arguments: Website }>) {
     <>
       {result && !loading && (
         <Detail
-          navigationTitle={`Analyzed ${website}`}
+          navigationTitle={`Scraped ${website}`}
           markdown={
             ((favicon && `# ![${website}](${favicon}) `) || "#") +
             ` Website OG Image: \n` +
