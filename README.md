@@ -1,4 +1,5 @@
-<img width="96" src="./assets/seo_checker_icon.png" />
+<img width="96" src="./assets/web-audit_icon.png" />
+
 
 # Web Audit Raycast Extension
 
