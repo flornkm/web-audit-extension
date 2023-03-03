@@ -10,6 +10,7 @@ This Raycast Extension lets you audit a given webpage in a matter of seconds. It
 - [ ] Search for Robots.txt in root URL
 - [ ] Optimize the listing / filtering of h-Tags
 - [ ] Add some other SEO related data to look for
+- [ ] Feature request: "as a website owner I want to click on the issue and see how to fix it." [Aleks Maker on Twitter](https://twitter.com/aleks_maker/status/1631670578762350593)
 
 Happy to hear some more suggestions!
 
