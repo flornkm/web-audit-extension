@@ -1,6 +1,6 @@
 # Web Audit Changelog
 
-## [Added a bunch of new feedback] - 2022-03-04
+## [Bugfixes, Adjustments and Tips] - 2022-03-04
 
 - Optimized the listing / filtering of h-Tags
 - Added tips how to fix the issues using `⌘t`
